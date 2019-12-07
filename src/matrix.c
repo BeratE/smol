@@ -9,8 +9,16 @@ SMOL_Matrix SMOL_AllocMatrix(size_t nRows, size_t nCols)
 /* Returns a newly allocated Matrix of given size.
  * ! Allocated memory has to be freed at some point.*/
 {
-    return (SMOL_Matrix){.nRows=nRows, .nCols=nCols,
-			     .fields=malloc(sizeof(double)*nRows*nCols)};
+    SMOL_Matrix m = (SMOL_Matrix){.nRows=nRows, .nCols=nCols,
+				  .fields=malloc(sizeof(double)*nRows*nCols)};
+
+    for (size_t r = 0; r < nRows; r++) {
+	for (size_t c = 0; c < nCols; c++) {
+	    m.fields[r*nCols+c] = 0.0;
+	}
+    }
+
+    return m;
 }
 
 SMOL_Matrix SMOL_RandomMatrix(size_t nRows, size_t nCols)
