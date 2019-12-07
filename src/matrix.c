@@ -12,11 +12,7 @@ SMOL_Matrix SMOL_AllocMatrix(size_t nRows, size_t nCols)
     SMOL_Matrix m = (SMOL_Matrix){.nRows=nRows, .nCols=nCols,
 				  .fields=malloc(sizeof(double)*nRows*nCols)};
 
-    for (size_t r = 0; r < nRows; r++) {
-	for (size_t c = 0; c < nCols; c++) {
-	    m.fields[r*nCols+c] = 0.0;
-	}
-    }
+    memset(m.fields, 0.0, sizeof(double)*nRows*nCols);
 
     return m;
 }
