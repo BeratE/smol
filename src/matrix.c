@@ -5,6 +5,49 @@
 
 static long _randseed = 0; // RNG Seed, 0 if unitialized. 
 
+void SMOL_PrintError(enum SMOL_STATUS status)
+/* Prints the status message in human readable form. */
+{
+    fprint("#!SMOL: ");
+    switch(status) {
+    case(SMOL_STATUS_OK):
+	fprint("The operation performed successfully. \n");
+	break;
+    case(SMOL_STATUS_INVALID_TYPE):
+	fprint("The type of the parameter is not accepted. \n");
+	break;
+    case(SMOL_STATUS_INCOMPATIBLE_SIZES):
+	fprint("The sizes of the arguments is not compatible. \n");
+	break;
+    case(SMOL_STATUS_ARRAY_OUT_OF_BOUNDS):
+	fprint("The arguments are out of the bounds of the matrix. \n");
+	break;
+    default:
+	fprint("Something something..\n");
+    };
+}
+
+void SMOL_Free(SMOL_Matrix* mat)
+/* Free memory allocated for the given matrix. */
+{
+    if (mat->fields != NULL) {
+	free(mat->fields);
+	mat->fields = NULL;
+	mat->nRows = 0;
+	mat->nCols = 0;
+    }
+}
+
+void SMOL_FreeV(int count, ...)
+/* Free memory allocated by variable number of matrices. */
+{
+    va_list args;
+    va_start(args, count);
+    while (count--)
+	SMOL_Free(va_arg(args, SMOL_Matrix*));
+    va_end(args);
+}
+
 int SMOL_TypeOf(const SMOL_Matrix *mat)
 /* Return the SMOL_TYPE of the given matrix. */
 {
@@ -346,30 +389,5 @@ int SMOL_GetColumn(SMOL_Matrix *lhs, const SMOL_Matrix *mat, size_t col)
     for(size_t i = 0; i < mat->nRows; i++)
 	lhs->fields[i] = mat->fields[i*mat->nCols+col];
     
-    return SMOL_STATUS_OK;
-}
-
-int SMOL_Free(SMOL_Matrix* mat)
-/* Free memory allocated for the given matrix. */
-{
-    if (mat->fields != NULL) {
-	free(mat->fields);
-	mat->fields = NULL;
-	mat->nRows = 0;
-	mat->nCols = 0;
-    }
-
-    return SMOL_STATUS_OK;
-}
-
-int SMOL_FreeV(int count, ...)
-/* Free memory allocated by variable number of matrices. */
-{
-    va_list args;
-    va_start(args, count);
-    while (count--)
-	SMOL_Free(va_arg(args, SMOL_Matrix*));
-    va_end(args);
-
     return SMOL_STATUS_OK;
 }

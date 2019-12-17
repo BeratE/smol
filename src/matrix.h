@@ -27,6 +27,9 @@ enum SMOL_STATUS {SMOL_STATUS_OK,
 /* Macros */ 
 #define SMOL_NULLMATRIX (SMOL_Matrix){.nRows = 0, .nCols = 0, .fields = NULL}
 
+void SMOL_PrintError(enum SMOL_STATUS status);
+void SMOL_Free(SMOL_Matrix* mat);
+void SMOL_FreeV(int count, ...);
 int SMOL_TypeOf(const SMOL_Matrix *mat);
 
 int SMOL_AllocMatrix(SMOL_Matrix* lhs, size_t nRows, size_t nCols);
@@ -56,8 +59,5 @@ int SMOL_SetColumn(SMOL_Matrix *lhs, size_t col, const SMOL_Matrix *vec);
 int SMOL_GetField(double *lhs, const SMOL_Matrix* mat, size_t row, size_t col);
 int SMOL_GetRow(SMOL_Matrix *lhs, const SMOL_Matrix *mat, size_t row);
 int SMOL_GetColumn(SMOL_Matrix *lhs, const SMOL_Matrix *mat, size_t col);
-
-int SMOL_Free(SMOL_Matrix* mat);
-int SMOL_FreeV(int count, ...);
 
 #endif // SMOL_MATRIX_H 
