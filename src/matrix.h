@@ -41,11 +41,14 @@ int SMOL_CameraMatrix(SMOL_Matrix* lhs, const double* vec3eye, const double* vec
 
 int SMOL_Fill(SMOL_Matrix *lhs, double value);
 int SMOL_Add(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
+int SMOL_AddV(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, ...)
 int SMOL_Subtract(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
+int SMOL_SubtractV(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, ...)
 int SMOL_Multiply(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
+int SMOL_MultiplyV(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, ...);
+int SMOL_Transpose(SMOL_Matrix *lhs);
 int SMOL_Scale(SMOL_Matrix *lhs, double scalar);
 //int SMOL_Rotate(SMOL_Matrix *lhs, const double* vec3axis, double angle);
-int SMOL_Transpose(SMOL_Matrix *lhs);
 
 int SMOL_VectorNormalize(SMOL_Matrix *lhs);
 int SMOL_VectorCross(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);

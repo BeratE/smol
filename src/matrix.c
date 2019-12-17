@@ -180,6 +180,20 @@ int SMOL_Add(SMOL_Matrix* lhs, const SMOL_Matrix* rhs)
     return SMOL_STATUS_OK;
 }
 
+int SMOL_AddV(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, ...)
+/* Variadic addition. */
+{
+    va_list args;
+    va_start(args, count);
+    
+    int status = 0;
+    while (status == SMOL_STATUS_OK && count--)
+	status = SMOL_Add(lhs, va_arg(args, SMOL_Matrix*));
+    
+    va_end(args);
+    return status;
+}
+
 int SMOL_SubtractMat(SMOL_Matrix* lhs, const SMOL_Matrix* rhs)
 /* Subtact the rhs from the lhs; A = A - B. */
 {
@@ -192,6 +206,20 @@ int SMOL_SubtractMat(SMOL_Matrix* lhs, const SMOL_Matrix* rhs)
     }
 
     return SMOL_STATUS_OK;
+}
+
+int SMOL_SubtractV(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, ...)
+/* Variadic subtraction. */
+{
+    va_list args;
+    va_start(args, count);
+    
+    int status = 0;
+    while (status == SMOL_STATUS_OK && count--)
+	status = SMOL_Add(lhs, va_arg(args, SMOL_Matrix*));
+    
+    va_end(args);
+    return status;
 }
 
 int SMOL_Multiply(SMOL_Matrix *lhs, const SMOL_Matrix *rhs)
@@ -215,6 +243,20 @@ int SMOL_Multiply(SMOL_Matrix *lhs, const SMOL_Matrix *rhs)
 
     SMOL_Free(&copy);
     return SMOL_STATUS_OK;
+}
+
+int SMOL_MultiplyV(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, ...)
+/* Variadic multiplication. */
+{
+    va_list args;
+    va_start(args, count);
+    
+    int status = 0;
+    while (status == SMOL_STATUS_OK && count--)
+	status = SMOL_Multiply(lhs, va_arg(args, SMOL_Matrix*));
+    
+    va_end(args);
+    return status;
 }
 
 int SMOL_Scale(SMOL_Matrix *lhs, double scalar)
