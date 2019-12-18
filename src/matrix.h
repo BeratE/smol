@@ -32,6 +32,7 @@ void SMOL_Free(SMOL_Matrix* mat);
 void SMOL_FreeV(int count, ...);
 int SMOL_TypeOf(const SMOL_Matrix *mat);
 
+/* Matrix Allocation */
 int SMOL_AllocMatrix(SMOL_Matrix* lhs, size_t nRows, size_t nCols);
 int SMOL_RandomMatrix(SMOL_Matrix *lhs, size_t nRows, size_t nCols);
 int SMOL_CopyMatrix(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
@@ -39,23 +40,31 @@ int SMOL_EyeMatrix(SMOL_Matrix *lhs, size_t size);
 int SMOL_PerspectiveMatrix(SMOL_Matrix* lhs, double fov, double ratio, double near, double far);
 int SMOL_CameraMatrix(SMOL_Matrix* lhs, const double* vec3eye, const double* vec3front, const double* vec3up);
 
+/* Basic Linear Operations */
 int SMOL_Fill(SMOL_Matrix *lhs, double value);
 int SMOL_Add(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
-int SMOL_AddV(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, ...)
 int SMOL_Subtract(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
-int SMOL_SubtractV(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, ...)
 int SMOL_Multiply(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
-int SMOL_MultiplyV(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, ...);
+int SMOL_AddV(SMOL_Matrix *lhs, size_t count, ...);
+int SMOL_SubtractV(SMOL_Matrix *lhs, size_t count, ...);
+int SMOL_MultiplyV(SMOL_Matrix *lhs, size_t count, ...);
 int SMOL_Transpose(SMOL_Matrix *lhs);
 int SMOL_Scale(SMOL_Matrix *lhs, double scalar);
 //int SMOL_Rotate(SMOL_Matrix *lhs, const double* vec3axis, double angle);
 
+/* Elementary Row Operations */
+int SMOL_SwapRow(SMOL_Matrix* lhs, size_t ri, size_t rj);
+int SMOL_MultiplyRow(SMOL_Matrix* lhs, size_t row, double scalar);
+int SMOL_AddRows(SMOL_Matrix *lhs, size_t srcrow, size_t dstrow, double scalar); 
+
+/* Vector Operations */
 int SMOL_VectorNormalize(SMOL_Matrix *lhs);
 int SMOL_VectorCross(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
 int SMOL_VectorLength(double* lhs, const SMOL_Matrix *vec);
 int SMOL_VectorLentghSquare(double *lhs, const SMOL_Matrix *vec);
 int SMOL_VectorDot(double* lhs, const SMOL_Matrix *vecA, const SMOL_Matrix *vecB);
 
+/* Setters and Accessors */
 int SMOL_SetField(SMOL_Matrix* lhs, size_t row, size_t col, double value);
 int SMOL_SetRow(SMOL_Matrix *lhs, size_t row, const SMOL_Matrix *vec);
 int SMOL_SetColumn(SMOL_Matrix *lhs, size_t col, const SMOL_Matrix *vec);

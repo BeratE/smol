@@ -1,5 +1,6 @@
 #include "matrix.h"
 #include <string.h>
+#include <stdio.h>
 #include <time.h>
 #include <math.h>
 
@@ -8,22 +9,22 @@ static long _randseed = 0; // RNG Seed, 0 if unitialized.
 void SMOL_PrintError(enum SMOL_STATUS status)
 /* Prints the status message in human readable form. */
 {
-    fprint("#!SMOL: ");
+    printf("#!SMOL: ");
     switch(status) {
     case(SMOL_STATUS_OK):
-	fprint("The operation performed successfully. \n");
+	printf("The operation performed successfully. \n");
 	break;
     case(SMOL_STATUS_INVALID_TYPE):
-	fprint("The type of the parameter is not accepted. \n");
+	printf("The type of the parameter is not accepted. \n");
 	break;
     case(SMOL_STATUS_INCOMPATIBLE_SIZES):
-	fprint("The sizes of the arguments is not compatible. \n");
+	printf("The sizes of the arguments is not compatible. \n");
 	break;
     case(SMOL_STATUS_ARRAY_OUT_OF_BOUNDS):
-	fprint("The arguments are out of the bounds of the matrix. \n");
+	printf("The arguments are out of the bounds of the matrix. \n");
 	break;
     default:
-	fprint("Something something..\n");
+	printf("Something something..\n");
     };
 }
 
@@ -64,6 +65,10 @@ int SMOL_TypeOf(const SMOL_Matrix *mat)
 
     return 0;
 }
+
+/* 
+ * Matrix Allocation 
+ */
 
 int SMOL_AllocMatrix(SMOL_Matrix *lhs, size_t nRows, size_t nCols)
 /* Returns a newly allocated Matrix of given size.
@@ -159,6 +164,10 @@ int SMOL_CameraMatrix(SMOL_Matrix *lhs, const double* vec3eye, const double* vec
     return SMOL_STATUS_OK;
 }
 
+/* 
+ * Basic Linear Operations 
+ */
+
 int SMOL_Fill(SMOL_Matrix *lhs, double value)
 /* Fills the given matrix with the given value. */
 {
@@ -180,7 +189,7 @@ int SMOL_Add(SMOL_Matrix* lhs, const SMOL_Matrix* rhs)
     return SMOL_STATUS_OK;
 }
 
-int SMOL_AddV(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, ...)
+int SMOL_AddV(SMOL_Matrix *lhs, size_t count, ...)
 /* Variadic addition. */
 {
     va_list args;
@@ -208,7 +217,7 @@ int SMOL_SubtractMat(SMOL_Matrix* lhs, const SMOL_Matrix* rhs)
     return SMOL_STATUS_OK;
 }
 
-int SMOL_SubtractV(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, ...)
+int SMOL_SubtractV(SMOL_Matrix *lhs, size_t count, ...)
 /* Variadic subtraction. */
 {
     va_list args;
@@ -245,7 +254,7 @@ int SMOL_Multiply(SMOL_Matrix *lhs, const SMOL_Matrix *rhs)
     return SMOL_STATUS_OK;
 }
 
-int SMOL_MultiplyV(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, ...)
+int SMOL_MultiplyV(SMOL_Matrix *lhs, size_t count, ...)
 /* Variadic multiplication. */
 {
     va_list args;
@@ -288,6 +297,54 @@ int SMOL_Transpose(SMOL_Matrix *lhs)
     SMOL_Free(&copy);
     return SMOL_STATUS_OK;
 }
+
+
+/* 
+ * Elementary Row Operations 
+ */
+
+int SMOL_SwapRow(SMOL_Matrix* lhs, size_t ri, size_t rj)
+/* Swap to rows in the given matrix. */
+{
+    if (ri > lhs->nRows || rj  > lhs->nRows)
+	return SMOL_STATUS_ARRAY_OUT_OF_BOUNDS;
+
+    double temp[lhs->nCols];
+    const size_t nCols = lhs->nCols;
+    memcpy(temp, &lhs->fields[ri*nCols], sizeof(double)*nCols);
+    memcpy(&lhs->fields[ri*nCols], &lhs->fields[rj*lhs->nCols], sizeof(double)*nCols);
+    memcpy(&lhs->fields[ri*nCols], temp, sizeof(double)*nCols);
+    
+    return SMOL_STATUS_OK;
+}
+
+int SMOL_MultiplyRow(SMOL_Matrix* lhs, size_t row, double scalar)
+/* Multiply a row with a given scalar. */
+{
+    if (row > lhs->nRows)
+	return SMOL_STATUS_ARRAY_OUT_OF_BOUNDS;
+
+    for (size_t c = 0; c < lhs->nCols; c++)
+	lhs->fields[row*lhs->nCols+c] *= scalar;
+    
+    return SMOL_STATUS_OK;
+}
+
+int SMOL_AddRows(SMOL_Matrix *lhs, size_t src_row, size_t dest_row, double scalar)
+/* Add a scalar multiple of the sourcerow to the destionation row. */
+{
+    if (src_row > lhs->nRows || dest_row > lhs->nRows)
+	return SMOL_STATUS_ARRAY_OUT_OF_BOUNDS;
+
+    for (size_t c = 0; c < lhs->nCols; c++)
+	lhs->fields[dest_row*lhs->nCols+c] += lhs->fields[src_row*lhs->nCols+c] * scalar;
+    
+    return SMOL_STATUS_OK;
+}
+
+/* 
+ * Vector Operations
+ */
 
 int SMOL_VectorNormalize(SMOL_Matrix *lhs)
 /* Normalize the given vector. */
@@ -359,6 +416,11 @@ int SMOL_VectorDot(double *lhs, const SMOL_Matrix *vecA, const SMOL_Matrix *vecB
 
     return SMOL_STATUS_OK;
 }
+
+
+/* 
+ * Setters and Accessors 
+ */
 
 int SMOL_SetField(SMOL_Matrix* lhs, size_t row, size_t col, double value)
 /* Sets the value of given matrix at position [row, col]. */
