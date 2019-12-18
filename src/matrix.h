@@ -21,6 +21,7 @@ enum SMOL_TYPE {SMOL_TYPE_NULL,
 
 enum SMOL_STATUS {SMOL_STATUS_OK,
 		  SMOL_STATUS_INVALID_TYPE,
+		  SMOL_STATUS_INVALID_ARGUMENT,
 		  SMOL_STATUS_INCOMPATIBLE_SIZES,
 		  SMOL_STATUS_ARRAY_OUT_OF_BOUNDS};
 
@@ -55,7 +56,10 @@ int SMOL_Scale(SMOL_Matrix *lhs, double scalar);
 /* Elementary Row Operations */
 int SMOL_SwapRow(SMOL_Matrix* lhs, size_t ri, size_t rj);
 int SMOL_MultiplyRow(SMOL_Matrix* lhs, size_t row, double scalar);
-int SMOL_AddRows(SMOL_Matrix *lhs, size_t srcrow, size_t dstrow, double scalar); 
+int SMOL_AddRows(SMOL_Matrix *lhs, size_t srcrow, size_t dstrow, double scalar);
+
+/* Linear Equation Systems */
+int SMOL_Echelon(SMOL_Matrix *lhs);
 
 /* Vector Operations */
 int SMOL_VectorNormalize(SMOL_Matrix *lhs);

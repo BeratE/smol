@@ -323,6 +323,8 @@ int SMOL_MultiplyRow(SMOL_Matrix* lhs, size_t row, double scalar)
 {
     if (row > lhs->nRows)
 	return SMOL_STATUS_ARRAY_OUT_OF_BOUNDS;
+    if (scalar == 0.0)
+	return SMOL_STATUS_INVALID_ARGUMENT;
 
     for (size_t c = 0; c < lhs->nCols; c++)
 	lhs->fields[row*lhs->nCols+c] *= scalar;
@@ -338,6 +340,60 @@ int SMOL_AddRows(SMOL_Matrix *lhs, size_t src_row, size_t dest_row, double scala
 
     for (size_t c = 0; c < lhs->nCols; c++)
 	lhs->fields[dest_row*lhs->nCols+c] += lhs->fields[src_row*lhs->nCols+c] * scalar;
+    
+    return SMOL_STATUS_OK;
+}
+
+/* 
+ * Linear Equation Systems 
+ */
+int SMOL_Echelon(SMOL_Matrix *lhs)
+/* Transforms the given matrix into row echelon form. */
+{
+    int type = SMOL_TypeOf(lhs);
+    if (type == SMOL_TYPE_ROW_VECTOR)
+	return SMOL_STATUS_OK; // Row vectors are in echelon form
+    if (type != SMOL_TYPE_MATRIX)
+	return SMOL_STATUS_INVALID_TYPE;
+
+    size_t curr_col = 0;
+    size_t curr_row = 0;
+    while (curr_row < lhs->nRows && curr_col < lhs->nCols) {
+	// Find first non-zero column and row entry
+	size_t col = curr_col; // First non-zero columns number
+	size_t row = curr_row; // First non-zero row number
+	while (!row && (col < lhs->nCols)) {
+	    for (size_t r = 0; r < lhs->nRows; r++) {
+		if (lhs->fields[r*lhs->nCols+col] != 0.0) {
+		    row = r;
+		    break;
+		}
+	    }
+	    if (row)
+		break;
+	    col++;
+	}
+	
+	if (col >= lhs->nCols) { 
+	    return SMOL_STATUS_OK; // Zero-matrix in echelon form
+	}
+
+	// Swap selected row to top
+	if (row > curr_row) {
+	    SMOL_SwapRow(lhs, row, curr_row);
+	}
+	
+	// Eliminate column entries below row
+	for (size_t i = curr_row+1; i < lhs->nRows; i++) {
+	    double s = -lhs->fields[i*lhs->nCols+col]/lhs->fields[curr_row*lhs->nCols+col];
+	    SMOL_AddRows(lhs, 0, i, s);
+	}
+
+	// Bottom-right sub-matrix
+	curr_col = col++;
+	curr_row++;
+    }
+
     
     return SMOL_STATUS_OK;
 }
