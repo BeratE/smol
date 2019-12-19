@@ -6,66 +6,6 @@
 
 static long _randseed = 0; // RNG Seed, 0 if unitialized. 
 
-void SMOL_PrintError(enum SMOL_STATUS status)
-/* Prints the status message in human readable form. */
-{
-    printf("#!SMOL: ");
-    switch(status) {
-    case(SMOL_STATUS_OK):
-	printf("The operation performed successfully. \n");
-	break;
-    case(SMOL_STATUS_INVALID_TYPE):
-	printf("The type of the parameter is not accepted. \n");
-	break;
-    case(SMOL_STATUS_INCOMPATIBLE_SIZES):
-	printf("The sizes of the arguments is not compatible. \n");
-	break;
-    case(SMOL_STATUS_ARRAY_OUT_OF_BOUNDS):
-	printf("The arguments are out of the bounds of the matrix. \n");
-	break;
-    default:
-	printf("Something something..\n");
-    };
-}
-
-void SMOL_Free(SMOL_Matrix* mat)
-/* Free memory allocated for the given matrix. */
-{
-    if (mat->fields != NULL) {
-	free(mat->fields);
-	mat->fields = NULL;
-	mat->nRows = 0;
-	mat->nCols = 0;
-    }
-}
-
-void SMOL_FreeV(int count, ...)
-/* Free memory allocated by variable number of matrices. */
-{
-    va_list args;
-    va_start(args, count);
-    while (count--)
-	SMOL_Free(va_arg(args, SMOL_Matrix*));
-    va_end(args);
-}
-
-int SMOL_TypeOf(const SMOL_Matrix *mat)
-/* Return the SMOL_TYPE of the given matrix. */
-{
-    if (mat->fields == NULL)
-	return SMOL_TYPE_NULL;
-    if (mat->nCols > 1 && mat->nCols > 1)
-	return SMOL_TYPE_MATRIX;
-    if (mat->nCols == 1 && mat->nRows > 1)
-	return SMOL_TYPE_COLUMN_VECTOR;
-    if (mat->nRows == 1 && mat->nCols > 1)
-	return SMOL_TYPE_ROW_VECTOR;
-    if (mat->nCols == 1 && mat->nRows == 1)
-	return SMOL_TYPE_SCALAR;
-
-    return 0;
-}
-
 /* 
  * Matrix Allocation 
  */
@@ -332,7 +272,7 @@ int SMOL_MultiplyRow(SMOL_Matrix* lhs, size_t row, double scalar)
     return SMOL_STATUS_OK;
 }
 
-int SMOL_AddRows(SMOL_Matrix *lhs, size_t src_row, size_t dest_row, double scalar)
+int SMOL_AddRows(SMOL_Matrix *lhs, size_t dest_row, size_t src_row, double scalar)
 /* Add a scalar multiple of the sourcerow to the destionation row. */
 {
     if (src_row > lhs->nRows || dest_row > lhs->nRows)
@@ -347,8 +287,9 @@ int SMOL_AddRows(SMOL_Matrix *lhs, size_t src_row, size_t dest_row, double scala
 /* 
  * Linear Equation Systems 
  */
-int SMOL_Echelon(SMOL_Matrix *lhs)
-/* Transforms the given matrix into row echelon form. */
+int SMOL_Echelon(SMOL_Matrix *lhs, int reduced)
+/* Applied gaussian elimination to transform the given matrix into row echelon form. 
+* If the paramter reduced evaluates true, the matrix is transformed into the reduced form. */
 {
     int type = SMOL_TypeOf(lhs);
     if (type == SMOL_TYPE_ROW_VECTOR)
@@ -356,44 +297,51 @@ int SMOL_Echelon(SMOL_Matrix *lhs)
     if (type != SMOL_TYPE_MATRIX)
 	return SMOL_STATUS_INVALID_TYPE;
 
-    size_t curr_col = 0;
-    size_t curr_row = 0;
-    while (curr_row < lhs->nRows && curr_col < lhs->nCols) {
+    const int is_reduced = reduced;
+    size_t top_col = 0; // Top-left index of current sub-matrix
+    size_t top_row = 0; // top-row + 1 is the rank of the matrix?
+    while (top_row < lhs->nRows && top_col < lhs->nCols) {
 	// Find first non-zero column and row entry
-	size_t col = curr_col; // First non-zero columns number
-	size_t row = curr_row; // First non-zero row number
+	size_t col = top_col; // First non-zero columns number
+	size_t row = top_row; // First non-zero row number
+	int is_nonzero = 0;
 	while (!row && (col < lhs->nCols)) {
 	    for (size_t r = 0; r < lhs->nRows; r++) {
 		if (lhs->fields[r*lhs->nCols+col] != 0.0) {
+		    is_nonzero = 1;
 		    row = r;
 		    break;
 		}
 	    }
-	    if (row)
+	    if (is_nonzero)
 		break;
 	    col++;
 	}
 	
-	if (col >= lhs->nCols) { 
-	    return SMOL_STATUS_OK; // Zero-matrix in echelon form
+	if (col >= lhs->nCols) { // No non-zero column found,
+	    // but zero matrix is already in echelon form
+	    break; 
 	}
 
-	// Swap selected row to top
-	if (row > curr_row) {
-	    SMOL_SwapRow(lhs, row, curr_row);
+	if (row > top_row) { // Swap selected row to top
+	    SMOL_SwapRow(lhs, row, top_row);
 	}
 	
 	// Eliminate column entries below row
-	for (size_t i = curr_row+1; i < lhs->nRows; i++) {
-	    double s = -lhs->fields[i*lhs->nCols+col]/lhs->fields[curr_row*lhs->nCols+col];
-	    SMOL_AddRows(lhs, 0, i, s);
+	for (size_t i = top_row+1; i < lhs->nRows; i++) {
+	    double s = -lhs->fields[i*lhs->nCols+col]/lhs->fields[top_row*lhs->nCols+col];
+	    SMOL_AddRows(lhs, i, top_row, s);
 	}
 
-	// Bottom-right sub-matrix
-	curr_col = col++;
-	curr_row++;
+	if (is_reduced) { // Bring the row into reduced form
+	    double s = 1/lhs->fields[top_row*lhs->nCols+col];
+	    SMOL_MultiplyRow(lhs, top_row, s);
+	}
+	
+	// Switch to bottom-right sub-matrix
+	top_col = col+1;
+	top_row ++;
     }
-
     
     return SMOL_STATUS_OK;
 }
@@ -550,4 +498,88 @@ int SMOL_GetColumn(SMOL_Matrix *lhs, const SMOL_Matrix *mat, size_t col)
 	lhs->fields[i] = mat->fields[i*mat->nCols+col];
     
     return SMOL_STATUS_OK;
+}
+
+
+/* 
+ * Misc. functions 
+ */
+
+int SMOL_TypeOf(const SMOL_Matrix *mat)
+/* Return the SMOL_TYPE of the given matrix. */
+{
+    if (mat->fields == NULL)
+	return SMOL_TYPE_NULL;
+    if (mat->nCols > 1 && mat->nCols > 1)
+	return SMOL_TYPE_MATRIX;
+    if (mat->nCols == 1 && mat->nRows > 1)
+	return SMOL_TYPE_COLUMN_VECTOR;
+    if (mat->nRows == 1 && mat->nCols > 1)
+	return SMOL_TYPE_ROW_VECTOR;
+    if (mat->nCols == 1 && mat->nRows == 1)
+	return SMOL_TYPE_SCALAR;
+
+    return 0;
+}
+
+void SMOL_PrintMatrix(const SMOL_Matrix* mat)
+/* Prints given matrix in human readable form. */
+{
+    printf("\n\nSMOL Matrix, %ld Rows, %ld Columns:\n", mat->nRows, mat->nCols);
+    if (SMOL_TypeOf(mat) == SMOL_TYPE_NULL) {
+	printf("Null matrix\n");
+	return;
+    }
+    
+    for (size_t r = 0; r < mat->nRows; r++) {
+	printf(" | ");
+	for (size_t c = 0; c < mat->nCols; c++) {
+	    printf("%-20f | ", mat->fields[r*mat->nCols+c]);
+	}
+	printf("\n");
+    }
+    printf("\n");
+}
+
+void SMOL_PrintError(enum SMOL_STATUS status)
+/* Prints the status message in human readable form. */
+{
+    printf("#!SMOL: ");
+    switch(status) {
+    case(SMOL_STATUS_OK):
+	printf("The operation performed successfully. \n");
+	break;
+    case(SMOL_STATUS_INVALID_TYPE):
+	printf("The type of the parameter is not accepted. \n");
+	break;
+    case(SMOL_STATUS_INCOMPATIBLE_SIZES):
+	printf("The sizes of the arguments is not compatible. \n");
+	break;
+    case(SMOL_STATUS_ARRAY_OUT_OF_BOUNDS):
+	printf("The arguments are out of the bounds of the matrix. \n");
+	break;
+    default:
+	printf("Something something..\n");
+    };
+}
+
+void SMOL_Free(SMOL_Matrix* mat)
+/* Free memory allocated for the given matrix. */
+{
+    if (mat->fields != NULL) {
+	free(mat->fields);
+	mat->fields = NULL;
+	mat->nRows = 0;
+	mat->nCols = 0;
+    }
+}
+
+void SMOL_FreeV(int count, ...)
+/* Free memory allocated by variable number of matrices. */
+{
+    va_list args;
+    va_start(args, count);
+    while (count--)
+	SMOL_Free(va_arg(args, SMOL_Matrix*));
+    va_end(args);
 }
