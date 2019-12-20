@@ -22,7 +22,7 @@ int SMOL_AllocMatrix(SMOL_Matrix *lhs, size_t nRows, size_t nCols)
     return SMOL_STATUS_OK;
 }
 
-int SMOL_RandomMatrix(SMOL_Matrix *lhs, size_t nRows, size_t nCols, size_t mod, int w_neg)
+int SMOL_RandomMatrix(SMOL_Matrix *lhs, size_t nRows, size_t nCols, size_t mod)
 /* Creates a matrix of given size and fills it with random values. */
 {
     if (_randseed == 0) { // Init seed
@@ -33,7 +33,7 @@ int SMOL_RandomMatrix(SMOL_Matrix *lhs, size_t nRows, size_t nCols, size_t mod, 
     SMOL_AllocMatrix(lhs, nRows, nCols);
     for (size_t r = 0; r < nRows; r++) {
 	for (size_t c = 0; c < nCols; c++) {
-	    lhs->fields[r*nCols+c] = rand() % mod * ((w_neg && rand() % 2) ? -1 : 1);
+	    lhs->fields[r*nCols+c] = (rand() % mod);
 	}
     }
     
@@ -131,17 +131,17 @@ int SMOL_CameraMatrix(SMOL_Matrix *lhs, const double* vec3eye, const double* vec
  * Elementary Row Operations 
  */
 
-int SMOL_SwapRow(SMOL_Matrix* lhs, size_t ri, size_t rj)
+int SMOL_SwapRows(SMOL_Matrix* lhs, size_t ri, size_t rj)
 /* Swap to rows in the given matrix. */
 {
     if (ri > lhs->nRows || rj  > lhs->nRows)
 	return SMOL_STATUS_ARRAY_OUT_OF_BOUNDS;
 
     double temp[lhs->nCols];
-    const size_t nCols = lhs->nCols;
-    memcpy(temp, &lhs->fields[ri*nCols], sizeof(double)*nCols);
-    memcpy(&lhs->fields[ri*nCols], &lhs->fields[rj*lhs->nCols], sizeof(double)*nCols);
-    memcpy(&lhs->fields[ri*nCols], temp, sizeof(double)*nCols);
+    const size_t colsize = sizeof(double) * lhs->nCols;
+    memcpy(temp, &lhs->fields[ri*lhs->nCols], colsize);
+    memcpy(&lhs->fields[ri*lhs->nCols], &lhs->fields[rj*lhs->nCols], colsize);
+    memcpy(&lhs->fields[rj*lhs->nCols], temp, colsize);
     
     return SMOL_STATUS_OK;
 }
@@ -176,9 +176,10 @@ int SMOL_AddRows(SMOL_Matrix *lhs, size_t dest_row, size_t src_row, double scala
  * Linear Equation Systems 
  */
 
-int SMOL_Echelon(SMOL_Matrix *lhs, int reduced)
+int SMOL_Echelon(SMOL_Matrix *lhs, size_t *outrank, int reduced)
 /* Applied gaussian elimination to transform the given matrix into row echelon form. 
-* If the paramter reduced evaluates true, the matrix is transformed into the reduced form. */
+* If the paramter reduced evaluates true, the matrix is transformed into the reduced form. 
+* Returns the rank of the matrix in the outrank parameter. */
 {
     int type = SMOL_TypeOf(lhs);
     if (type == SMOL_TYPE_ROW_VECTOR)
@@ -193,32 +194,34 @@ int SMOL_Echelon(SMOL_Matrix *lhs, int reduced)
 	// Find first non-zero column and row entry
 	size_t col = top_col; // First non-zero columns number
 	size_t row = top_row; // First non-zero row number
+	double maxval = 0.0;
 	int is_nonzero = 0;
-	while (!row && (col < lhs->nCols)) {
-	    for (size_t r = 0; r < lhs->nRows; r++) {
-		if (lhs->fields[r*lhs->nCols+col] != 0.0) {
+	while (!is_nonzero && (col < lhs->nCols)) {
+	    for (size_t r = top_row; r < lhs->nRows; r++) {
+		const double v = fabs(lhs->fields[r*lhs->nCols+col]);
+		if (v > maxval) {
 		    is_nonzero = 1;
+		    maxval = v;
 		    row = r;
-		    break;
 		}
 	    }
 	    if (is_nonzero)
 		break;
 	    col++;
 	}
-	
-	if (col >= lhs->nCols) { // No non-zero column found,
-	    // but zero matrix is already in echelon form
-	    break; 
-	}
 
-	if (row > top_row) { // Swap selected row to top
-	    SMOL_SwapRow(lhs, row, top_row);
-	}
+	// No non-zero column found, zero-matrix in echelon form
+	if (col >= lhs->nCols)
+	    break; 
+
+	// Swap selected row to top
+	if (row > top_row) 
+	    SMOL_SwapRows(lhs, row, top_row);
 	
 	// Eliminate column entries below row
 	for (size_t i = top_row+1; i < lhs->nRows; i++) {
-	    double s = -lhs->fields[i*lhs->nCols+col]/lhs->fields[top_row*lhs->nCols+col];
+	    const double d = lhs->fields[top_row*lhs->nCols+col];
+	    const double s = -lhs->fields[i*lhs->nCols+col]/d;
 	    SMOL_AddRows(lhs, i, top_row, s);
 	}
 
@@ -231,6 +234,9 @@ int SMOL_Echelon(SMOL_Matrix *lhs, int reduced)
 	top_col = col+1;
 	top_row ++;
     }
+
+    if (outrank != NULL)
+	*outrank = top_row;
     
     return SMOL_STATUS_OK;
 }
@@ -246,21 +252,24 @@ int SMOL_Invert(SMOL_Matrix *lhs)
     
     SMOL_Matrix ext, eye;
     SMOL_EyeMatrix(&eye, lhs->nCols);
-    SMOL_CopyMatrix(&ext, lhs);
-    
+    SMOL_CopyMatrix(&ext, lhs);   
     SMOL_AppendColumns(&ext, &eye);
-    SMOL_Echelon(&ext, 1);
 
-    // Backward insertion
-    for (size_t i = ext.nRows-1; i > 0; i--) {
-	for (size_t j = 0; j < i; j++) {
-	    SMOL_AddRows(&ext, j, i, -ext.fields[j*ext.nCols+i]);
+    size_t rank = 0;
+    SMOL_Echelon(&ext, &rank, 1);
+    
+    if (rank == ext.nRows) {
+	// Backward insertion
+	for (size_t i = ext.nRows-1; i > 0; i--) {
+	    for (size_t j = 0; j < i; j++) {
+		SMOL_AddRows(&ext, j, i, -ext.fields[j*ext.nCols+i]);
+	    }
 	}
+
+	SMOL_Free(lhs);
+	SMOL_CopySubMatrix(lhs, &ext, 0, ext.nRows, ext.nRows-1, ext.nCols-1);
     }
-
-    SMOL_Free(lhs);
-    SMOL_CopySubMatrix(lhs, &ext, 0, ext.nRows, ext.nRows-1, ext.nCols-1);
-
+    
     SMOL_FreeV(2, &eye, &ext);    
     return SMOL_STATUS_OK;
 }

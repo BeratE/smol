@@ -20,6 +20,7 @@ enum SMOL_TYPE {SMOL_TYPE_NULL,
 		SMOL_TYPE_COLUMN_VECTOR};
 
 enum SMOL_STATUS {SMOL_STATUS_OK,
+		  SMOL_STATUS_NO_VALUE,
 		  SMOL_STATUS_INVALID_TYPE,
 		  SMOL_STATUS_INVALID_ARGUMENTS,
 		  SMOL_STATUS_INCOMPATIBLE_SIZES,
@@ -30,7 +31,7 @@ enum SMOL_STATUS {SMOL_STATUS_OK,
 
 /* Matrix Allocation */
 int SMOL_AllocMatrix(SMOL_Matrix* lhs, size_t nRows, size_t nCols);
-int SMOL_RandomMatrix(SMOL_Matrix *lhs, size_t nRows, size_t nCols, size_t mod, int w_neg);
+int SMOL_RandomMatrix(SMOL_Matrix *lhs, size_t nRows, size_t nCols, size_t mod);
 int SMOL_CopyMatrix(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
 int SMOL_CopySubMatrix(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, size_t r0, size_t c0, size_t r1, size_t c1);
 int SMOL_EyeMatrix(SMOL_Matrix *lhs, size_t size);
@@ -38,15 +39,16 @@ int SMOL_PerspectiveMatrix(SMOL_Matrix* lhs, double fov, double ratio, double ne
 int SMOL_CameraMatrix(SMOL_Matrix* lhs, const double* vec3eye, const double* vec3front, const double* vec3up);
 
 /* Elementary Row Operations */
-int SMOL_SwapRow(SMOL_Matrix* lhs, size_t ri, size_t rj);
+int SMOL_SwapRows(SMOL_Matrix* lhs, size_t ri, size_t rj);
 int SMOL_MultiplyRow(SMOL_Matrix* lhs, size_t row, double scalar);
 int SMOL_AddRows(SMOL_Matrix *lhs, size_t dest_row, size_t src_row, double scalar);
 
 /* Linear Equation Systems */
-int SMOL_Echelon(SMOL_Matrix *lhs, int reduced);
+int SMOL_Echelon(SMOL_Matrix *lhs, size_t *outrank, int reduced);
 int SMOL_Invert(SMOL_Matrix *lhs);
+int SMOL_SolveEquation(SMOL_Matrix *lhs, const SMOL_Matrix *coef, const SMOL_Matrix *b);
 
-/* Other Basic Linear Operations */
+/* Basic Linear Operations */
 int SMOL_Fill(SMOL_Matrix *lhs, double value);
 int SMOL_Add(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
 int SMOL_Subtract(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);

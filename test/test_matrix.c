@@ -10,15 +10,40 @@ void teardown ()
 }
 
 MU_TEST(sandbox) {
-    SMOL_Matrix c;
+
+    SMOL_Matrix c, a;
     SMOL_RandomMatrix(&c, 3, 3, 10);
     SMOL_PrintMatrix(&c);
+
+    SMOL_CopyMatrix(&a, &c);
+    size_t rank = 0;
+    SMOL_Echelon(&a, &rank, 1);
+
+    printf("Rank: %ld\n", rank);
+    SMOL_PrintMatrix(&a);
     
     SMOL_Invert(&c);
 
     SMOL_PrintMatrix(&c);
 
-    SMOL_Free(&c);
+    /*
+      double f[9] =  {
+		    9.0, 8.0, 1.0,
+		    0.0, 0.0, 5.0,
+		    5.0, 4.0, 9.0
+    };
+    SMOL_Matrix a = (SMOL_Matrix){.nRows=3, .nCols=3, .fields=f};
+    SMOL_Matrix c;
+    SMOL_CopyMatrix(&c, &a);
+
+    SMOL_PrintMatrix(&c);
+
+    SMOL_Invert(&c);
+
+    SMOL_PrintMatrix(&c);
+    
+    SMOL_Free(&c);*/
+    SMOL_Free(&a);
 }
 
 MU_TEST(dotproduct) {
