@@ -9,15 +9,16 @@ void teardown ()
 {
 }
 
-MU_TEST(print) {
-    SMOL_Matrix m;
-    SMOL_RandomMatrix(&m, 4, 4);
-
-    SMOL_Echelon(&m, 1);
+MU_TEST(sandbox) {
+    SMOL_Matrix c;
+    SMOL_RandomMatrix(&c, 3, 3, 10);
+    SMOL_PrintMatrix(&c);
     
-    SMOL_PrintMatrix(&m);
+    SMOL_Invert(&c);
 
-    SMOL_Free(&m);
+    SMOL_PrintMatrix(&c);
+
+    SMOL_Free(&c);
 }
 
 MU_TEST(dotproduct) {
@@ -126,11 +127,11 @@ MU_TEST(crossproduct) {
 
 MU_TEST_SUITE(matrix_suite) {
     MU_SUITE_CONFIGURE(&setup, &teardown);
+    MU_RUN_TEST(sandbox);
     MU_RUN_TEST(addition);
     MU_RUN_TEST(multiplication);
     MU_RUN_TEST(dotproduct);
     MU_RUN_TEST(crossproduct);
-    MU_RUN_TEST(print);
 }
 
 int main ()
