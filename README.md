@@ -1,6 +1,6 @@
 # Simple Matrix Operation Library
 
-SMOL, as the name suggests, is a small C library for relatively simple matrix operations on rather small matrix objects. 
+SMOL, as the name suggests, is a small C library for relatively simple matrix operations on small matrix structures. 
 Most notes in this document are not relevant for the user, but merely serve as a mental note and guidance for myself.
 The use and development of this library is mainly for educational purposes. There are several, more sophisticated libraries for intensive linear algebra computations, like BLAS and LAPACK.
 
@@ -28,6 +28,11 @@ So beware that you do not do something like this: *SMOL_Multiply(&A, &SMOL_Rando
 Most operations are declared in imperative form, such as Add, Transpose or Multiply. 
 This means, that the operations alters the left-hand side argument - the subject of operation - which is always the first argument passed by reference.
 The operation A = A * B translates to *SMOL_Multiply(&A, &B);*. The result of the operation is stored in the left-hand operator.
+
+## Todo
+* Rotation Matrix X, Y, Z
+* Rotation Matrix Axis, Angle
+* Quaternions
 
 ## Licence
 This project is licenced under the GNU GPLv3.

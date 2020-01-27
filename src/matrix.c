@@ -63,11 +63,9 @@ int SMOL_CopySubMatrix(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, size_t r0, size
     const size_t nCols = c1-c0+1;
     SMOL_AllocMatrix(lhs, nRows, nCols);
 
-    for (size_t r = 0; r < lhs->nRows; r++) {
+    for (size_t r = 0; r < lhs->nRows; r++)
 	memcpy(&lhs->fields[r*lhs->nCols], &rhs->fields[(r0+r)*rhs->nCols+c0], sizeof(double)*nCols);
-    }
-    
-    
+   
     return SMOL_STATUS_OK;
 }
 
@@ -122,6 +120,38 @@ int SMOL_CameraMatrix(SMOL_Matrix *lhs, const double* vec3eye, const double* vec
 	SMOL_SetField(lhs, i, 3, -vec3eye[i]);
 
     SMOL_FreeV(3, &front, &right, &up);
+
+    return SMOL_STATUS_OK;
+}
+
+int SMOL_RotationMatrix(SMOL_Matrix *lhs, const double* axis, double angle)
+/* Rotate the given lhs matrix around the given axis by the given the radian angle.*/
+{
+    double l = sqrt(axis[0]*axis[0]+axis[1]*axis[1]+axis[2]*axis[2]);
+    double u[] = {axis[0] / l,
+		  axis[1] / l,
+		  axis[2] / l};
+    double cos_a = cos(angle);
+    double cos_a1 = 1 - cos_a;
+    double sin_a = sin(angle);
+    
+    SMOL_AllocMatrix(lhs, 4, 4);
+    lhs->fields[0]  = cos_a+u[0]*u[0]*cos_a1;
+    lhs->fields[1]  = u[0]*u[1]*cos_a1-u[2]*sin_a;
+    lhs->fields[2]  = u[0]*u[2]*cos_a1+u[1]*sin_a;
+    lhs->fields[3]  = 0.0;
+    lhs->fields[4]  = u[1]*u[0]*cos_a1+u[2]*sin_a;
+    lhs->fields[5]  = cos_a+u[1]*u[1]*cos_a1;
+    lhs->fields[6]  = u[1]*u[2]*cos_a1-u[0]*sin_a;
+    lhs->fields[7]  = 0.0;
+    lhs->fields[8]  = u[2]*u[0]*cos_a1-u[1]*sin_a;
+    lhs->fields[9]  = u[2]*u[1]*cos_a1+u[0]*sin_a;
+    lhs->fields[10] = cos_a+u[2]*u[2]*cos_a1;
+    lhs->fields[11] = 0.0;
+    lhs->fields[12] = 0.0;
+    lhs->fields[13] = 0.0;
+    lhs->fields[14] = 0.0;
+    lhs->fields[15] = 1.0;
 
     return SMOL_STATUS_OK;
 }
@@ -314,7 +344,7 @@ int SMOL_AddV(SMOL_Matrix *lhs, size_t count, ...)
     return status;
 }
 
-int SMOL_SubtractMat(SMOL_Matrix* lhs, const SMOL_Matrix* rhs)
+int SMOL_Subtract(SMOL_Matrix* lhs, const SMOL_Matrix* rhs)
 /* Subtact the rhs from the lhs; A = A - B. */
 {
     if (lhs->nRows != rhs->nRows || lhs->nCols != rhs->nCols)
@@ -336,55 +366,27 @@ int SMOL_SubtractV(SMOL_Matrix *lhs, size_t count, ...)
     
     int status = 0;
     while (status == SMOL_STATUS_OK && count--)
-	status = SMOL_Add(lhs, va_arg(args, SMOL_Matrix*));
+	status = SMOL_Subtract(lhs, va_arg(args, SMOL_Matrix*));
     
     va_end(args);
     return status;
 }
 
-int SMOL_Multiply(SMOL_Matrix *lhs, const SMOL_Matrix *rhs)
-/* Multiply the rhs of size NxK to the lhs of size MxN resulting in a MxK; A = A * B. */
+
+int SMOL_Multiply(SMOL_Matrix *lhs, const SMOL_Matrix *rhsA, const SMOL_Matrix *rhsB)
+/* Multiply the rhs of size NxK to the lhs of size MxN resulting in a MxK; L = A * B. */
 {
-    if (lhs->nCols != rhs->nRows)
+    if (rhsA->nCols != rhsB->nRows)
 	return SMOL_STATUS_INCOMPATIBLE_SIZES;
 
-    SMOL_Matrix copy;
-    SMOL_CopyMatrix(&copy, lhs);
+
+    SMOL_AllocMatrix(lhs, rhsA->nRows, rhsB->nCols);
     
-    SMOL_Free(lhs);
-    SMOL_AllocMatrix(lhs, copy.nRows, rhs->nCols);
-    
-    for (unsigned int rA = 0; rA < lhs->nRows; rA++) {
-	for (unsigned int cB = 0; cB < lhs->nCols; cB++) {
-	    for (unsigned int i = 0; i < copy.nCols; i++)
-		lhs->fields[rA*rhs->nCols+cB] += copy.fields[rA*copy.nCols+i]*rhs->fields[i*rhs->nCols+cB];
+    for (unsigned int rA = 0; rA < rhsA->nRows; rA++) {
+	for (unsigned int cB = 0; cB < rhsB->nCols; cB++) {
+	    for (unsigned int i = 0; i < rhsA->nCols; i++)
+		lhs->fields[rA*lhs->nCols+cB] += rhsA->fields[rA*rhsA->nCols+i]*rhsB->fields[i*rhsB->nCols+cB];
 	}
-    }
-
-    SMOL_Free(&copy);
-    return SMOL_STATUS_OK;
-}
-
-int SMOL_MultiplyV(SMOL_Matrix *lhs, size_t count, ...)
-/* Variadic multiplication. */
-{
-    va_list args;
-    va_start(args, count);
-    
-    int status = 0;
-    while (status == SMOL_STATUS_OK && count--)
-	status = SMOL_Multiply(lhs, va_arg(args, SMOL_Matrix*));
-    
-    va_end(args);
-    return status;
-}
-
-int SMOL_Scale(SMOL_Matrix *lhs, double scalar)
-/* Multiply given Matrix with a scalar value. */
-{
-    for (unsigned int r = 0; r < lhs->nRows; r++) {
-	for (unsigned int c = 0; c < lhs->nCols; c++)
-	    lhs->fields[r*lhs->nCols+c] *= scalar;
     }
 
     return SMOL_STATUS_OK;
@@ -406,6 +408,17 @@ int SMOL_Transpose(SMOL_Matrix *lhs)
     }
 
     SMOL_Free(&copy);
+    return SMOL_STATUS_OK;
+}
+
+int SMOL_Scale(SMOL_Matrix *lhs, double scalar)
+/* Multiply given Matrix with a scalar value. */
+{
+    for (unsigned int r = 0; r < lhs->nRows; r++) {
+	for (unsigned int c = 0; c < lhs->nCols; c++)
+	    lhs->fields[r*lhs->nCols+c] *= scalar;
+    }
+
     return SMOL_STATUS_OK;
 }
 
@@ -687,4 +700,13 @@ void SMOL_FreeV(int count, ...)
     while (count--)
 	SMOL_Free(va_arg(args, SMOL_Matrix*));
     va_end(args);
+}
+
+void SMOL_Ref(SMOL_Matrix *lhs, const SMOL_Matrix *rhs)
+/* The lhs is a reference to the rhs matrix, pointing to the same fields array. */
+{
+    SMOL_Free(lhs);
+    lhs->nRows = rhs->nRows;
+    lhs->nCols = rhs->nCols;
+    lhs->fields = rhs->fields;
 }
