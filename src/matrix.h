@@ -47,15 +47,15 @@ int SMOL_AddRows(SMOL_Matrix *lhs, size_t dest_row, size_t src_row, double scala
 /* Linear Equation Systems */
 int SMOL_Echelon(SMOL_Matrix *lhs, size_t *outrank, int reduced);
 int SMOL_Invert(SMOL_Matrix *lhs);
-//int SMOL_SolveEquation(SMOL_Matrix *lhs, const SMOL_Matrix *coef, const SMOL_Matrix *b);
 
-/* Basic Linear Operations */
+/* Basic Operations */
 int SMOL_Fill(SMOL_Matrix *lhs, double value);
 int SMOL_Add(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
-int SMOL_Subtract(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
-int SMOL_Multiply(SMOL_Matrix *lhs, const SMOL_Matrix *rhsA, const SMOL_Matrix *rhsB);
 int SMOL_AddV(SMOL_Matrix *lhs, size_t count, ...);
+int SMOL_Subtract(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
 int SMOL_SubtractV(SMOL_Matrix *lhs, size_t count, ...);
+int SMOL_Multiply(SMOL_Matrix *lhs, const SMOL_Matrix *rhsA, const SMOL_Matrix *rhsB);
+int SMOL_MultiplyV(SMOL_Matrix *lhs, size_t count, ...);
 int SMOL_Transpose(SMOL_Matrix *lhs);
 int SMOL_Scale(SMOL_Matrix *lhs, double scalar);
 

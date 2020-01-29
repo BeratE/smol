@@ -30,8 +30,7 @@ This means, that the operations alters the left-hand side argument - the subject
 The operation A = A * B translates to *SMOL_Multiply(&A, &B);*. The result of the operation is stored in the left-hand operator.
 
 ## Todo
-* Rotation Matrix X, Y, Z
-* Rotation Matrix Axis, Angle
+* Variadic Multiplication
 * Quaternions
 
 ## Licence

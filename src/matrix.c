@@ -379,7 +379,6 @@ int SMOL_Multiply(SMOL_Matrix *lhs, const SMOL_Matrix *rhsA, const SMOL_Matrix *
     if (rhsA->nCols != rhsB->nRows)
 	return SMOL_STATUS_INCOMPATIBLE_SIZES;
 
-
     SMOL_AllocMatrix(lhs, rhsA->nRows, rhsB->nCols);
     
     for (unsigned int rA = 0; rA < rhsA->nRows; rA++) {
@@ -390,6 +389,38 @@ int SMOL_Multiply(SMOL_Matrix *lhs, const SMOL_Matrix *rhsA, const SMOL_Matrix *
     }
 
     return SMOL_STATUS_OK;
+}
+
+int SMOL_MultiplyV(SMOL_Matrix *lhs, size_t count, ...)
+/* Variadic multiplication. Order is from leftmost to rightmost. */
+{
+    if (count < 2)
+	return SMOL_STATUS_INVALID_ARGUMENTS;
+    
+    va_list args;
+    va_start(args, count);
+
+    SMOL_Matrix next;
+    SMOL_Matrix store;
+
+    SMOL_CopyMatrix(&store, va_arg(args, SMOL_Matrix*));
+    
+    int status = SMOL_STATUS_OK;
+    while (status == SMOL_STATUS_OK && count--) {
+	next = *va_arg(args, SMOL_Matrix*);
+	
+	SMOL_Matrix res;
+	SMOL_Multiply(&res, &next, &store);
+
+	SMOL_Free(&store);
+	SMOL_CopyMatrix(&store, &res);
+	SMOL_Free(&res);
+    }
+
+    SMOL_CopyMatrix(lhs, &store);
+    SMOL_Free(&store);
+
+    return status;
 }
 
 int SMOL_Transpose(SMOL_Matrix *lhs) 
@@ -643,7 +674,7 @@ int SMOL_TypeOf(const SMOL_Matrix *mat)
 void SMOL_PrintMatrix(const SMOL_Matrix* mat)
 /* Prints given matrix in human readable form. */
 {
-    printf("\n\nSMOL Matrix, %ld Rows, %ld Columns:\n", mat->nRows, mat->nCols);
+    printf("SMOL Matrix, %ld Rows, %ld Columns:\n", mat->nRows, mat->nCols);
     if (SMOL_TypeOf(mat) == SMOL_TYPE_NULL) {
 	printf("Null matrix\n");
 	return;
@@ -684,12 +715,10 @@ void SMOL_PrintError(enum SMOL_STATUS status)
 void SMOL_Free(SMOL_Matrix* mat)
 /* Free memory allocated for the given matrix. */
 {
-    if (mat->fields != NULL) {
-	free(mat->fields);
-	mat->fields = NULL;
-	mat->nRows = 0;
-	mat->nCols = 0;
-    }
+    free(mat->fields);
+    mat->fields = NULL;
+    mat->nRows = 0;
+    mat->nCols = 0;
 }
 
 void SMOL_FreeV(int count, ...)
@@ -705,7 +734,6 @@ void SMOL_FreeV(int count, ...)
 void SMOL_Ref(SMOL_Matrix *lhs, const SMOL_Matrix *rhs)
 /* The lhs is a reference to the rhs matrix, pointing to the same fields array. */
 {
-    SMOL_Free(lhs);
     lhs->nRows = rhs->nRows;
     lhs->nCols = rhs->nCols;
     lhs->fields = rhs->fields;
