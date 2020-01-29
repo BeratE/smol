@@ -404,6 +404,7 @@ int SMOL_MultiplyV(SMOL_Matrix *lhs, size_t count, ...)
     SMOL_Matrix store;
 
     SMOL_CopyMatrix(&store, va_arg(args, SMOL_Matrix*));
+    count--;
     
     int status = SMOL_STATUS_OK;
     while (status == SMOL_STATUS_OK && count--) {

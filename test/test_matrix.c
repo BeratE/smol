@@ -37,7 +37,7 @@ MU_TEST(matrix_multiplication)
     mu_assert_double_eq(0.0, d.fields[0]);
 
     SMOL_Free(&d);
-    /*
+    
     // Variadic multiplication
     SMOL_MultiplyV(&result, 4, &eye, &eye, &eye, &eye);
 
@@ -51,7 +51,6 @@ MU_TEST(matrix_multiplication)
     }
     
     SMOL_Free(&result);
-    */
 }
 
 MU_TEST(matrix_addition)
