@@ -61,7 +61,7 @@ int SMOL_Scale(SMOL_Matrix *lhs, double scalar);
 
 /* Vector Operations */
 int SMOL_VectorNormalize(SMOL_Matrix *lhs);
-int SMOL_VectorCross(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
+int SMOL_VectorCross(SMOL_Matrix *lhs, const SMOL_Matrix *rhsA, const SMOL_Matrix *rhsB);
 int SMOL_VectorLength(double* lhs, const SMOL_Matrix *vec);
 int SMOL_VectorLentghSquare(double *lhs, const SMOL_Matrix *vec);
 int SMOL_VectorDot(double* lhs, const SMOL_Matrix *vecA, const SMOL_Matrix *vecB);

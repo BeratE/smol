@@ -95,31 +95,33 @@ int SMOL_PerspectiveMatrix(SMOL_Matrix *lhs, double fov, double ratio, double ne
     return SMOL_STATUS_OK;
 }
 
-int SMOL_CameraMatrix(SMOL_Matrix *lhs, const double* vec3eye, const double* vec3front, const double* vec3up)
+int SMOL_CameraMatrix(SMOL_Matrix *lhs, const double* vec3eye, const double* vec3center, const double* vec3up)
 /* Construct a camera matrix from the eye position and the given front & up vectors. */
 {
-    SMOL_Matrix front, right, up;
-    SMOL_CopyMatrix(&front, &(SMOL_Matrix){.fields=(double*)vec3front, .nRows=3, .nCols=1});
-    SMOL_CopyMatrix(&right, &front);
-    SMOL_VectorCross(&right, &(SMOL_Matrix){.fields=(double*)vec3up, .nRows=3, .nCols=1});
-    SMOL_CopyMatrix(&up, &right);
-    SMOL_VectorCross(&up, &front);
+    SMOL_Matrix pos, front, up, right;
+    SMOL_CopyMatrix(&pos, &(SMOL_Matrix){.fields=(double*)vec3eye, .nRows=3, .nCols=1});
+    SMOL_CopyMatrix(&up, &(SMOL_Matrix){.fields=(double*)vec3up, .nRows=3, .nCols=1});
+    SMOL_CopyMatrix(&front, &(SMOL_Matrix){.fields=(double*)vec3center, .nRows=3, .nCols=1});
+    
+    SMOL_Subtract(&front, &pos);
 
+    SMOL_VectorCross(&right, &front, &up);
+    SMOL_Free(&up);
+    SMOL_VectorCross(&up, &right, &front);
+    
     SMOL_AllocMatrix(lhs, 4, 4);
     
-    SMOL_Scale(&front, -1.0);    
     SMOL_VectorNormalize(&up);
     SMOL_VectorNormalize(&front);
     SMOL_VectorNormalize(&right);
+    SMOL_Scale(&pos, -1.0);
 
     SMOL_SetColumn(lhs, 0, &right);
     SMOL_SetColumn(lhs, 1, &up);
     SMOL_SetColumn(lhs, 2, &front);
-
-    for(int i = 0; i < 3; i++)
-	SMOL_SetField(lhs, i, 3, -vec3eye[i]);
-
-    SMOL_FreeV(3, &front, &right, &up);
+    SMOL_SetColumn(lhs, 3, &pos);
+    
+    SMOL_FreeV(4, &pos, &front, &right, &up);
 
     return SMOL_STATUS_OK;
 }
@@ -468,26 +470,25 @@ int SMOL_VectorNormalize(SMOL_Matrix *lhs)
     double l;
     SMOL_VectorLength(&l, lhs);
     for (size_t i = 0; i < lhs->nCols*lhs->nRows; i++)
-	lhs->fields[i] /= l;
+	lhs->fields[i] = lhs->fields[i] / l;
 
     return SMOL_STATUS_OK;
 }
 
-int SMOL_VectorCross(SMOL_Matrix *lhs, const SMOL_Matrix *rhs)
+int SMOL_VectorCross(SMOL_Matrix *lhs, const SMOL_Matrix *rhsA, const SMOL_Matrix *rhsB)
 /* Assigns the cross product of the lhs and rhs vector the the lhs; A = A x B. */
 {
-    if (SMOL_TypeOf(lhs) < SMOL_TYPE_VECTOR ||
-	SMOL_TypeOf(rhs) < SMOL_TYPE_VECTOR)
+    if (SMOL_TypeOf(rhsA) < SMOL_TYPE_VECTOR ||
+	SMOL_TypeOf(rhsB) < SMOL_TYPE_VECTOR)
 	return SMOL_STATUS_INVALID_TYPE;
     
-    if (lhs->nCols != 1 || rhs->nCols != 1 || lhs->nRows != 3 || rhs->nRows != 3)
+    if (rhsA->nCols != 1 || rhsB->nCols != 1 || rhsA->nRows != 3 || rhsB->nRows != 3)
 	return SMOL_STATUS_INCOMPATIBLE_SIZES;
 
-    SMOL_Matrix copy;
-    SMOL_CopyMatrix(&copy, lhs);
-    lhs->fields[0] = copy.fields[1]*rhs->fields[2] - copy.fields[2]*rhs->fields[1];
-    lhs->fields[1] = copy.fields[2]*rhs->fields[0] - copy.fields[0]*rhs->fields[2];
-    lhs->fields[2] = copy.fields[0]*rhs->fields[1] - copy.fields[1]*rhs->fields[0];
+    SMOL_AllocMatrix(lhs, 3, 1);
+    lhs->fields[0] = rhsA->fields[1]*rhsB->fields[2] - rhsA->fields[2]*rhsB->fields[1];
+    lhs->fields[1] = rhsA->fields[2]*rhsB->fields[0] - rhsA->fields[0]*rhsB->fields[2];
+    lhs->fields[2] = rhsA->fields[0]*rhsB->fields[1] - rhsA->fields[1]*rhsB->fields[0];
     
     return SMOL_STATUS_OK;
 }
@@ -498,19 +499,16 @@ int SMOL_VectorLength(double *lhs, const SMOL_Matrix *vec)
     if (SMOL_TypeOf(vec) < SMOL_TYPE_VECTOR)
 	return SMOL_STATUS_INVALID_TYPE;
     
-    *lhs = SMOL_VectorDot(lhs, vec, vec);
+    int status = SMOL_VectorDot(lhs, vec, vec);
     *lhs = sqrt(*lhs);
-    return SMOL_STATUS_OK;
+    
+    return status;
 }
 
 int SMOL_VectorLengthSquare(double* lhs, const SMOL_Matrix *vec)
 /* Return the length of the vector squared. */
 {
-    if (SMOL_TypeOf(vec) < SMOL_TYPE_VECTOR)
-	return SMOL_STATUS_INVALID_TYPE;
-    
-    *lhs = SMOL_VectorDot(lhs, vec, vec);
-    return SMOL_STATUS_OK;
+    return SMOL_VectorDot(lhs, vec, vec);
 }
 
 int SMOL_VectorDot(double *lhs, const SMOL_Matrix *vecA, const SMOL_Matrix *vecB)

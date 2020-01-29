@@ -108,6 +108,55 @@ MU_TEST(matrix_invert)
     SMOL_FreeV(2, &inv, &res);
 }
 
+MU_TEST(vector_cross)
+{
+    printf("crossing and dotting");
+    SMOL_Matrix r1, r2, r3;
+
+    SMOL_RandomMatrix(&r1, 3, 1, 10);
+    SMOL_RandomMatrix(&r1, 3, 1, 10);
+
+    SMOL_VectorCross(&r3, &r1, &r2);
+
+    double d1, d2, d3;
+    SMOL_VectorDot(&d1, &r1, &r2);
+    SMOL_VectorDot(&d2, &r1, &r3);
+    SMOL_VectorDot(&d3, &r2, &r3);
+
+    mu_assert_double_eq(0.0, d1);
+    mu_assert_double_eq(0.0, d2);
+    mu_assert_double_eq(0.0, d3);
+    
+    SMOL_FreeV(3, &r1, &r2, &r3);
+}
+
+MU_TEST(vector_normalize)
+{
+    printf("normalizing");
+    SMOL_Matrix r1 = (SMOL_Matrix){.fields=(double[]){2.0, 2.0, 3.0}, .nRows=3, .nCols=1};
+    SMOL_Matrix r2 = (SMOL_Matrix){.fields=(double[]){4.0, 1.0, 7.0}, .nRows=3, .nCols=1};
+    SMOL_Matrix r3 = (SMOL_Matrix){.fields=(double[]){4.234, 1.5, 7.53, 0.0}, .nRows=4, .nCols=1};
+
+    double l1, l2, l3;
+    SMOL_VectorLength(&l1, &r1);
+    SMOL_VectorLength(&l2, &r2);
+    SMOL_VectorLength(&l3, &r3);
+
+    mu_check((l1 > 0.0 || l1 > 0.0 || l1 > 0.0));
+    
+    SMOL_VectorNormalize(&r1);
+    SMOL_VectorNormalize(&r2);
+    SMOL_VectorNormalize(&r3);
+
+    SMOL_VectorLength(&l1, &r1);
+    SMOL_VectorLength(&l2, &r2);
+    SMOL_VectorLength(&l3, &r3);
+
+    mu_assert_double_eq(1.0, l1);
+    mu_assert_double_eq(1.0, l2);
+    mu_assert_double_eq(1.0, l3);
+}
+
 MU_TEST_SUITE(matrix_suite)
 {
     SMOL_EyeMatrix(&eye, 4);
@@ -124,6 +173,8 @@ MU_TEST_SUITE(matrix_suite)
     MU_RUN_TEST(matrix_subtraction);
     MU_RUN_TEST(matrix_multiplication);
     MU_RUN_TEST(matrix_invert);
+    MU_RUN_TEST(vector_cross);
+    MU_RUN_TEST(vector_normalize);
 
     SMOL_FreeV(2, &eye, &random);
 }
