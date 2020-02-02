@@ -84,6 +84,5 @@ void SMOL_PrintMatrix(const SMOL_Matrix* mat);
 void SMOL_PrintError(enum SMOL_STATUS status);
 void SMOL_Free(SMOL_Matrix* mat);
 void SMOL_FreeV(int count, ...);
-void SMOL_Ref(SMOL_Matrix *lhs, const SMOL_Matrix *rhs);
 
 #endif // SMOL_MATRIX_H 

@@ -114,8 +114,10 @@ int SMOL_CameraMatrix(SMOL_Matrix *lhs, const double* vec3eye, const double* vec
     SMOL_VectorNormalize(&up);
     SMOL_VectorNormalize(&front);
     SMOL_VectorNormalize(&right);
+    
     SMOL_Scale(&pos, -1.0);
-
+    //SMOL_Scale(&front, -1.0);
+    
     SMOL_SetColumn(lhs, 0, &right);
     SMOL_SetColumn(lhs, 1, &up);
     SMOL_SetColumn(lhs, 2, &front);
@@ -381,15 +383,17 @@ int SMOL_Multiply(SMOL_Matrix *lhs, const SMOL_Matrix *rhsA, const SMOL_Matrix *
     if (rhsA->nCols != rhsB->nRows)
 	return SMOL_STATUS_INCOMPATIBLE_SIZES;
 
-    SMOL_AllocMatrix(lhs, rhsA->nRows, rhsB->nCols);
+    SMOL_Matrix res;
+    SMOL_AllocMatrix(&res, rhsA->nRows, rhsB->nCols);
     
     for (unsigned int rA = 0; rA < rhsA->nRows; rA++) {
 	for (unsigned int cB = 0; cB < rhsB->nCols; cB++) {
 	    for (unsigned int i = 0; i < rhsA->nCols; i++)
-		lhs->fields[rA*lhs->nCols+cB] += rhsA->fields[rA*rhsA->nCols+i]*rhsB->fields[i*rhsB->nCols+cB];
+		res.fields[rA*res.nCols+cB] += rhsA->fields[rA*rhsA->nCols+i]*rhsB->fields[i*rhsB->nCols+cB];
 	}
     }
 
+    *lhs = res;
     return SMOL_STATUS_OK;
 }
 
@@ -728,12 +732,4 @@ void SMOL_FreeV(int count, ...)
     while (count--)
 	SMOL_Free(va_arg(args, SMOL_Matrix*));
     va_end(args);
-}
-
-void SMOL_Ref(SMOL_Matrix *lhs, const SMOL_Matrix *rhs)
-/* The lhs is a reference to the rhs matrix, pointing to the same fields array. */
-{
-    lhs->nRows = rhs->nRows;
-    lhs->nCols = rhs->nCols;
-    lhs->fields = rhs->fields;
 }
