@@ -109,14 +109,12 @@ int SMOL_CameraMatrix(SMOL_Matrix *lhs, const double* vec3eye, const double* vec
     SMOL_Free(&up);
     SMOL_VectorCross(&up, &right, &front);
     
-    SMOL_AllocMatrix(lhs, 4, 4);
-    
     SMOL_VectorNormalize(&up);
     SMOL_VectorNormalize(&front);
     SMOL_VectorNormalize(&right);
-    
     SMOL_Scale(&pos, -1.0);
-    //SMOL_Scale(&front, -1.0);
+
+    SMOL_AllocMatrix(lhs, 4, 4);
     
     SMOL_SetColumn(lhs, 0, &right);
     SMOL_SetColumn(lhs, 1, &up);
