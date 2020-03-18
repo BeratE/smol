@@ -10,8 +10,8 @@ set (LIB_DIR "${CMAKE_SOURCE_DIR}/lib")
 set (LIBS m)
 
 set (SOURCE_FILES
-  ${SRC_DIR}/matrix.h
-  ${SRC_DIR}/matrix.c)
+  ${SRC_DIR}/smol.h
+  ${SRC_DIR}/smol.c)
 
 ###
 ### The line of no edit.

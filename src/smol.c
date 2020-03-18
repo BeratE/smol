@@ -1,4 +1,4 @@
-#include "matrix.h"
+#include "smol.h"
 #include <string.h>
 #include <stdio.h>
 #include <time.h>
@@ -16,8 +16,8 @@ int SMOL_AllocMatrix(SMOL_Matrix *lhs, size_t nRows, size_t nCols)
 {
     lhs->nRows = nRows;
     lhs->nCols = nCols;
-    lhs->fields = malloc(sizeof(double)*nRows*nCols);
-    memset(lhs->fields, 0.0, sizeof(double)*nRows*nCols);
+    lhs->fields = malloc(sizeof(float)*nRows*nCols);
+    memset(lhs->fields, 0.0, sizeof(float)*nRows*nCols);
 
     return SMOL_STATUS_OK;
 }
@@ -44,7 +44,7 @@ int SMOL_CopyMatrix(SMOL_Matrix *lhs, const SMOL_Matrix *mat)
 /* Returns a deep copy of given matrix. */
 {
     SMOL_AllocMatrix(lhs, mat->nRows, mat->nCols);
-    memcpy(lhs->fields, mat->fields, sizeof(double)*lhs->nRows*lhs->nCols);
+    memcpy(lhs->fields, mat->fields, sizeof(float)*lhs->nRows*lhs->nCols);
     
     return SMOL_STATUS_OK;
 }
@@ -64,7 +64,7 @@ int SMOL_CopySubMatrix(SMOL_Matrix *lhs, const SMOL_Matrix *rhs, size_t r0, size
     SMOL_AllocMatrix(lhs, nRows, nCols);
 
     for (size_t r = 0; r < lhs->nRows; r++)
-	memcpy(&lhs->fields[r*lhs->nCols], &rhs->fields[(r0+r)*rhs->nCols+c0], sizeof(double)*nCols);
+	memcpy(&lhs->fields[r*lhs->nCols], &rhs->fields[(r0+r)*rhs->nCols+c0], sizeof(float)*nCols);
    
     return SMOL_STATUS_OK;
 }
@@ -79,12 +79,12 @@ int SMOL_EyeMatrix(SMOL_Matrix *lhs, size_t size)
     return SMOL_STATUS_OK;
 }
 
-int SMOL_PerspectiveMatrix(SMOL_Matrix *lhs, double fov, double ratio, double near, double far)
+int SMOL_PerspectiveMatrix(SMOL_Matrix *lhs, float fov, float ratio, float near, float far)
 /* Construct the perspective matrix from the given parameters. */
 {
     SMOL_AllocMatrix(lhs, 4, 4);
-    const double t = near * tan((fov/2)*M_PI/180);
-    const double r = t * ratio;
+    const float t = near * tan((fov/2)*M_PI/180);
+    const float r = t * ratio;
     
     SMOL_SetField(lhs, 0, 0, near/r);
     SMOL_SetField(lhs, 1, 1, near/t);
@@ -95,13 +95,13 @@ int SMOL_PerspectiveMatrix(SMOL_Matrix *lhs, double fov, double ratio, double ne
     return SMOL_STATUS_OK;
 }
 
-int SMOL_CameraMatrix(SMOL_Matrix *lhs, const double* vec3eye, const double* vec3center, const double* vec3up)
+int SMOL_CameraMatrix(SMOL_Matrix *lhs, const float* vec3eye, const float* vec3center, const float* vec3up)
 /* Construct a camera matrix from the eye position and the given front & up vectors. */
 {
     SMOL_Matrix pos, front, up, right;
-    SMOL_CopyMatrix(&pos, &(SMOL_Matrix){.fields=(double*)vec3eye, .nRows=3, .nCols=1});
-    SMOL_CopyMatrix(&up, &(SMOL_Matrix){.fields=(double*)vec3up, .nRows=3, .nCols=1});
-    SMOL_CopyMatrix(&front, &(SMOL_Matrix){.fields=(double*)vec3center, .nRows=3, .nCols=1});
+    SMOL_CopyMatrix(&pos, &(SMOL_Matrix){.fields=(float*)vec3eye, .nRows=3, .nCols=1});
+    SMOL_CopyMatrix(&up, &(SMOL_Matrix){.fields=(float*)vec3up, .nRows=3, .nCols=1});
+    SMOL_CopyMatrix(&front, &(SMOL_Matrix){.fields=(float*)vec3center, .nRows=3, .nCols=1});
     
     SMOL_Subtract(&front, &pos);
 
@@ -126,16 +126,16 @@ int SMOL_CameraMatrix(SMOL_Matrix *lhs, const double* vec3eye, const double* vec
     return SMOL_STATUS_OK;
 }
 
-int SMOL_RotationMatrix(SMOL_Matrix *lhs, const double* axis, double angle)
+int SMOL_RotationMatrix(SMOL_Matrix *lhs, const float* axis, float angle)
 /* Rotate the given lhs matrix around the given axis by the given the radian angle.*/
 {
-    double l = sqrt(axis[0]*axis[0]+axis[1]*axis[1]+axis[2]*axis[2]);
-    double u[] = {axis[0] / l,
+    float l = sqrt(axis[0]*axis[0]+axis[1]*axis[1]+axis[2]*axis[2]);
+    float u[] = {axis[0] / l,
 		  axis[1] / l,
 		  axis[2] / l};
-    double cos_a = cos(angle);
-    double cos_a1 = 1 - cos_a;
-    double sin_a = sin(angle);
+    float cos_a = cos(angle);
+    float cos_a1 = 1 - cos_a;
+    float sin_a = sin(angle);
     
     SMOL_AllocMatrix(lhs, 4, 4);
     lhs->fields[0]  = cos_a+u[0]*u[0]*cos_a1;
@@ -169,8 +169,8 @@ int SMOL_SwapRows(SMOL_Matrix* lhs, size_t ri, size_t rj)
     if (ri > lhs->nRows || rj  > lhs->nRows)
 	return SMOL_STATUS_ARRAY_OUT_OF_BOUNDS;
 
-    double temp[lhs->nCols];
-    const size_t colsize = sizeof(double) * lhs->nCols;
+    float temp[lhs->nCols];
+    const size_t colsize = sizeof(float) * lhs->nCols;
     memcpy(temp, &lhs->fields[ri*lhs->nCols], colsize);
     memcpy(&lhs->fields[ri*lhs->nCols], &lhs->fields[rj*lhs->nCols], colsize);
     memcpy(&lhs->fields[rj*lhs->nCols], temp, colsize);
@@ -178,7 +178,7 @@ int SMOL_SwapRows(SMOL_Matrix* lhs, size_t ri, size_t rj)
     return SMOL_STATUS_OK;
 }
 
-int SMOL_MultiplyRow(SMOL_Matrix* lhs, size_t row, double scalar)
+int SMOL_MultiplyRow(SMOL_Matrix* lhs, size_t row, float scalar)
 /* Multiply a row with a given scalar. */
 {
     if (row > lhs->nRows)
@@ -192,7 +192,7 @@ int SMOL_MultiplyRow(SMOL_Matrix* lhs, size_t row, double scalar)
     return SMOL_STATUS_OK;
 }
 
-int SMOL_AddRows(SMOL_Matrix *lhs, size_t dest_row, size_t src_row, double scalar)
+int SMOL_AddRows(SMOL_Matrix *lhs, size_t dest_row, size_t src_row, float scalar)
 /* Add a scalar multiple of the sourcerow to the destionation row. */
 {
     if (src_row > lhs->nRows || dest_row > lhs->nRows)
@@ -226,11 +226,11 @@ int SMOL_Echelon(SMOL_Matrix *lhs, size_t *outrank, int reduced)
 	// Find first non-zero column and row entry
 	size_t col = top_col; // First non-zero columns number
 	size_t row = top_row; // First non-zero row number
-	double maxval = 0.0;
+	float maxval = 0.0;
 	int is_nonzero = 0;
 	while (!is_nonzero && (col < lhs->nCols)) {
 	    for (size_t r = top_row; r < lhs->nRows; r++) {
-		const double v = fabs(lhs->fields[r*lhs->nCols+col]);
+		const float v = fabs(lhs->fields[r*lhs->nCols+col]);
 		if (v > maxval) {
 		    is_nonzero = 1;
 		    maxval = v;
@@ -252,13 +252,13 @@ int SMOL_Echelon(SMOL_Matrix *lhs, size_t *outrank, int reduced)
 	
 	// Eliminate column entries below row
 	for (size_t i = top_row+1; i < lhs->nRows; i++) {
-	    const double d = lhs->fields[top_row*lhs->nCols+col];
-	    const double s = -lhs->fields[i*lhs->nCols+col]/d;
+	    const float d = lhs->fields[top_row*lhs->nCols+col];
+	    const float s = -lhs->fields[i*lhs->nCols+col]/d;
 	    SMOL_AddRows(lhs, i, top_row, s);
 	}
 
 	if (is_reduced) { // Bring the row into reduced form
-	    double s = 1/lhs->fields[top_row*lhs->nCols+col];
+	    float s = 1/lhs->fields[top_row*lhs->nCols+col];
 	    SMOL_MultiplyRow(lhs, top_row, s);
 	}
 	
@@ -311,10 +311,10 @@ int SMOL_Invert(SMOL_Matrix *lhs)
  * Basic Linear Operations 
  */
 
-int SMOL_Fill(SMOL_Matrix *lhs, double value)
+int SMOL_Fill(SMOL_Matrix *lhs, float value)
 /* Fills the given matrix with the given value. */
 {
-    memset(lhs->fields, value, sizeof(double)*lhs->nRows*lhs->nCols);
+    memset(lhs->fields, value, sizeof(float)*lhs->nRows*lhs->nCols);
     return SMOL_STATUS_OK;
 }
 
@@ -447,7 +447,7 @@ int SMOL_Transpose(SMOL_Matrix *lhs)
     return SMOL_STATUS_OK;
 }
 
-int SMOL_Scale(SMOL_Matrix *lhs, double scalar)
+int SMOL_Scale(SMOL_Matrix *lhs, float scalar)
 /* Multiply given Matrix with a scalar value. */
 {
     for (unsigned int r = 0; r < lhs->nRows; r++) {
@@ -469,7 +469,7 @@ int SMOL_VectorNormalize(SMOL_Matrix *lhs)
     if (SMOL_TypeOf(lhs) < SMOL_TYPE_VECTOR)
 	return SMOL_STATUS_INVALID_TYPE;
     
-    double l;
+    float l;
     SMOL_VectorLength(&l, lhs);
     for (size_t i = 0; i < lhs->nCols*lhs->nRows; i++)
 	lhs->fields[i] = lhs->fields[i] / l;
@@ -495,7 +495,7 @@ int SMOL_VectorCross(SMOL_Matrix *lhs, const SMOL_Matrix *rhsA, const SMOL_Matri
     return SMOL_STATUS_OK;
 }
 
-int SMOL_VectorLength(double *lhs, const SMOL_Matrix *vec)
+int SMOL_VectorLength(float *lhs, const SMOL_Matrix *vec)
 /* Return the length of the given vector. */
 {
     if (SMOL_TypeOf(vec) < SMOL_TYPE_VECTOR)
@@ -507,13 +507,13 @@ int SMOL_VectorLength(double *lhs, const SMOL_Matrix *vec)
     return status;
 }
 
-int SMOL_VectorLengthSquare(double* lhs, const SMOL_Matrix *vec)
+int SMOL_VectorLengthSquare(float* lhs, const SMOL_Matrix *vec)
 /* Return the length of the vector squared. */
 {
     return SMOL_VectorDot(lhs, vec, vec);
 }
 
-int SMOL_VectorDot(double *lhs, const SMOL_Matrix *vecA, const SMOL_Matrix *vecB)
+int SMOL_VectorDot(float *lhs, const SMOL_Matrix *vecA, const SMOL_Matrix *vecB)
 /* Return the dot product between vector A and B. */
 {
     if (SMOL_TypeOf(vecA) < SMOL_TYPE_VECTOR ||
@@ -535,7 +535,7 @@ int SMOL_VectorDot(double *lhs, const SMOL_Matrix *vecA, const SMOL_Matrix *vecB
  * Setters and Accessors 
  */
 
-int SMOL_SetField(SMOL_Matrix* lhs, size_t row, size_t col, double value)
+int SMOL_SetField(SMOL_Matrix* lhs, size_t row, size_t col, float value)
 /* Sets the value of given matrix at position [row, col]. */
 {
     if (row > lhs->nRows || col > lhs->nCols)
@@ -554,7 +554,7 @@ int SMOL_SetRow(SMOL_Matrix *lhs, size_t row, const SMOL_Matrix *vec)
     if (row > lhs->nRows || vec->nCols*vec->nRows > lhs->nCols)
 	return SMOL_STATUS_ARRAY_OUT_OF_BOUNDS;
     
-    memcpy(&lhs->fields[row*lhs->nCols], vec->fields, sizeof(double)*vec->nCols*vec->nRows);
+    memcpy(&lhs->fields[row*lhs->nCols], vec->fields, sizeof(float)*vec->nCols*vec->nRows);
 
     return SMOL_STATUS_OK;
 }
@@ -573,7 +573,7 @@ int SMOL_SetColumn(SMOL_Matrix *lhs, size_t col, const SMOL_Matrix *vec)
     return SMOL_STATUS_OK;
 }
 
-int SMOL_GetField(double* lhs, const SMOL_Matrix* mat, size_t row, size_t col)
+int SMOL_GetField(float* lhs, const SMOL_Matrix* mat, size_t row, size_t col)
 /* Returns the value of the matrix entry at [row, col]. */
 {
     if (row > mat->nRows || col > mat->nCols)
@@ -591,7 +591,7 @@ int SMOL_GetRow(SMOL_Matrix *lhs, const SMOL_Matrix *mat, size_t row)
 	return SMOL_STATUS_ARRAY_OUT_OF_BOUNDS;
     
     SMOL_AllocMatrix(lhs, 1, mat->nCols);
-    memcpy(lhs->fields, &mat->fields[row*mat->nCols], sizeof(double)*mat->nCols);
+    memcpy(lhs->fields, &mat->fields[row*mat->nCols], sizeof(float)*mat->nCols);
 
     return SMOL_STATUS_OK;
 }
@@ -620,8 +620,8 @@ int SMOL_AppendRows(SMOL_Matrix* lhs, const SMOL_Matrix *rhs)
     if (rhs->nCols != lhs->nCols)
 	return SMOL_STATUS_INCOMPATIBLE_SIZES;
 
-    const size_t left_size = sizeof(double) * lhs->nRows * lhs->nCols;
-    const size_t right_size = sizeof(double) * rhs->nRows * rhs->nCols;
+    const size_t left_size = sizeof(float) * lhs->nRows * lhs->nCols;
+    const size_t right_size = sizeof(float) * rhs->nRows * rhs->nCols;
     lhs->fields = realloc(lhs->fields, left_size + right_size);
     memcpy(&lhs->fields[lhs->nRows*lhs->nCols], rhs->fields, right_size);
     lhs->nRows += rhs->nRows;
@@ -635,15 +635,15 @@ int SMOL_AppendColumns(SMOL_Matrix* lhs, const SMOL_Matrix *rhs)
     if (rhs->nRows != lhs->nRows)
 	return SMOL_STATUS_INCOMPATIBLE_SIZES;
 
-    const size_t left_size = sizeof(double) * lhs->nRows * lhs->nCols;
-    const size_t right_size = sizeof(double) * rhs->nRows * rhs->nCols;
+    const size_t left_size = sizeof(float) * lhs->nRows * lhs->nCols;
+    const size_t right_size = sizeof(float) * rhs->nRows * rhs->nCols;
     lhs->fields = realloc(lhs->fields, left_size + right_size);
 
     const size_t col_size = lhs->nCols + rhs->nCols;
     for (size_t r = 0; r < lhs->nRows; r++) {
 	const size_t pos = r*col_size + lhs->nCols;
-	memmove(&lhs->fields[pos+rhs->nCols], &lhs->fields[pos], left_size-sizeof(double)*(r+1)*lhs->nCols);
-	memcpy(&lhs->fields[pos], &rhs->fields[r*rhs->nCols], sizeof(double)*rhs->nCols);
+	memmove(&lhs->fields[pos+rhs->nCols], &lhs->fields[pos], left_size-sizeof(float)*(r+1)*lhs->nCols);
+	memcpy(&lhs->fields[pos], &rhs->fields[r*rhs->nCols], sizeof(float)*rhs->nCols);
     }
     lhs->nCols += rhs->nCols;
     

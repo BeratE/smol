@@ -1,5 +1,5 @@
 #include "minunit.h"
-#include "matrix.h"
+#include "smol.h"
 
 SMOL_Matrix eye;
 SMOL_Matrix random;
@@ -28,8 +28,8 @@ MU_TEST(matrix_multiplication)
     SMOL_Free(&result);
 
     // Dot product
-    SMOL_Matrix vec1 = (SMOL_Matrix){.nCols=1, .nRows=3, .fields=(double[]){0.0, 0.0, 1.0}};
-    SMOL_Matrix vec2 = (SMOL_Matrix){.nCols=3, .nRows=1, .fields=(double[]){1.0, 0.0, 0.0}};
+    SMOL_Matrix vec1 = (SMOL_Matrix){.nCols=1, .nRows=3, .fields=(float[]){0.0, 0.0, 1.0}};
+    SMOL_Matrix vec2 = (SMOL_Matrix){.nCols=3, .nRows=1, .fields=(float[]){1.0, 0.0, 0.0}};
     SMOL_Matrix d;
     SMOL_Multiply(&d, &vec2, &vec1);
     mu_assert_int_eq(1, d.nRows);
@@ -118,7 +118,7 @@ MU_TEST(vector_cross)
 
     SMOL_VectorCross(&r3, &r1, &r2);
 
-    double d1, d2, d3;
+    float d1, d2, d3;
     SMOL_VectorDot(&d1, &r1, &r2);
     SMOL_VectorDot(&d2, &r1, &r3);
     SMOL_VectorDot(&d3, &r2, &r3);
@@ -133,11 +133,11 @@ MU_TEST(vector_cross)
 MU_TEST(vector_normalize)
 {
     printf("normalizing");
-    SMOL_Matrix r1 = (SMOL_Matrix){.fields=(double[]){2.0, 2.0, 3.0}, .nRows=3, .nCols=1};
-    SMOL_Matrix r2 = (SMOL_Matrix){.fields=(double[]){4.0, 1.0, 7.0}, .nRows=3, .nCols=1};
-    SMOL_Matrix r3 = (SMOL_Matrix){.fields=(double[]){4.234, 1.5, 7.53, 0.0}, .nRows=4, .nCols=1};
+    SMOL_Matrix r1 = (SMOL_Matrix){.fields=(float[]){2.0, 2.0, 3.0}, .nRows=3, .nCols=1};
+    SMOL_Matrix r2 = (SMOL_Matrix){.fields=(float[]){4.0, 1.0, 7.0}, .nRows=3, .nCols=1};
+    SMOL_Matrix r3 = (SMOL_Matrix){.fields=(float[]){4.234, 1.5, 7.53, 0.0}, .nRows=4, .nCols=1};
 
-    double l1, l2, l3;
+    float l1, l2, l3;
     SMOL_VectorLength(&l1, &r1);
     SMOL_VectorLength(&l2, &r2);
     SMOL_VectorLength(&l3, &r3);
